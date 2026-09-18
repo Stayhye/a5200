@@ -1284,3 +1284,48 @@ void Device_UpdatePatches(void)
 	Atari800_AddEscRts(H_PATCH_SPEC, ESC_HHSPEC, Device_H_Special);
 	/* H: in HATABS will be added next frame by Device_Frame */
 }
+
+#if defined(PS2)
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+
+char dir_path[FILENAME_MAX];
+static DIR *current_dir = NULL;
+
+int Atari_OpenDir(const char *filename)
+{
+    if (current_dir)
+        closedir(current_dir);
+    
+    current_dir = opendir(filename);
+    if (!current_dir)
+        return 0;
+        
+    snprintf(dir_path, sizeof(dir_path), "%s", filename);
+    return 1;
+}
+
+int Atari_ReadDir(char *fullpath, char *filename, int *isdir, int *readonly, int *size, char *timetext)
+{
+    if (!current_dir)
+        return 0;
+
+    struct dirent *ent = readdir(current_dir);
+    if (!ent)
+        return 0;
+
+    snprintf(filename, FILENAME_MAX, "%s", ent->d_name);
+    
+    *isdir = (ent->d_type == DT_DIR);
+    *readonly = 0;
+    *size = 0;
+    if (timetext)
+        timetext[0] = '\0';
+
+    if (fullpath)
+        snprintf(fullpath, FILENAME_MAX, "%s/%s", dir_path, ent->d_name);
+
+    return 1;
+}
+#endif
